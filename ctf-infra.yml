@@ -1,0 +1,127 @@
+- name: Azure CTF Infrastructure playbook
+  hosts: localhost
+  vars:
+    rgname: "CTFRG"
+    region: "East US"
+    serveruser: "ctfadmin"
+    ssh_keys: "ssh-rsa key here"
+    servernsg: "ctf-server-nsg"
+    serversubnet: "ctf-server-subnet"
+    servernic: "ctf-server-nic"
+    workstationuser: "ctfuser"
+    # Move to vault later
+    workstationnsg: "ctf-workstation-nsg"
+    workstationsubnet: "ctf-wrk-subnet"
+    vnetname: "CTF-VNET1"
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Create virtualnetwork
+      azure_rm_virtualnetwork:
+        resource_group: "{{ rgname }}"
+        name: "{{ vnetname }}"
+        address_prefixes_cidr:
+          - "10.0.0.0/16"
+    - name: Create Server Subnet
+      azure_rm_subnet:
+        resource_group: "{{ rgname }}"
+        name: "{{ serversubnet }}"
+        address_prefix_cidr: 10.0.0.0/24
+        virtual_network_name: "{{ vnetname }}"
+    - name: Create Workstation Subnet
+      azure_rm_subnet:
+        resource_group: "{{ rgname }}"
+        name: "{{ workstationsubnet }}"
+        address_prefix_cidr: 10.2.0.0/23
+        virtual_network_name: "{{ vnetname }}"
+    - name: Create server nsg
+      azure_rm_securitygroup:
+        resource_group: "{{ rgname }}"
+        name: "{{ servernsg }}"
+        rules:
+          - name: "AllowSSH from Workstation Subnet"
+            protocol: TCP
+            destination_port_range: 22
+            access: Allow
+            priority: 100
+            direction: Inbound
+            source_address_prefix: "10.2.0.0/23"
+          - name: "Allow HTTPS from workstation Subnet"
+            protocol: TCP
+            destination_port_range: 443
+            access: Allow
+            priority: 110
+            direction: Inbound
+            source_address_prefix: "10.2.0.0/23"
+          - name: "Allow HTTP from workstation Subnet"
+            protocol: TCP
+            destination_port_range: 80
+            access: Allow
+            priority: 120
+            direction: Inbound
+            source_address_prefix: "10.2.0.0/23"
+          - name: "Deny all other inbound"
+            access: Deny
+            protocol: "*"
+            direction: Inbound
+            destination_port_range: "*"
+            source_address_prefix: "*"
+            priority: 1000
+    - name: Create workstation nsg
+      azure_rm_securitygroup:
+        resource_group: "{{ rgname }}"
+        name: "{{ workstationnsg }}"
+    - name: Create server
+      azure_rm_virtualmachine:
+        resource_group: "{{ rgname }}"
+        name: ctfserver
+        vm_size: Standard_D1
+        admin_username: ctfadmin
+        ssh_password: false
+        ssh_public_keys: "{{ ssh_keys }}"
+        network_interface_names: "{{ servernic }}"
+        image:
+          offer: CentOS
+          publisher: OpenLogic
+          sku: '7.4'
+          version: latest
+    - name: Create server NIC
+      azure_rm_networkinterface:
+        resource_group: "{{ rgname }}"
+        name: "{{ servernic }}"
+        public_ip: false
+        virtual_network_name: "{{ vnetname }}"
+        subnet_name: "{{ serversubnet }}"
+        security_group_name: "{{ servernsg }}"
+    - name: Create base workstation NIC
+      azure_rm_networkinterface:
+        resource_group: "{{ rgname }}"
+        name: ctfworkstation-nic
+        public_ip: false
+        virtual_network_name: "{{ vnetname }}"
+        subnet_name: "{{ workstationsubnet }}"
+        security_group_name: "{{ workstationnsg }}"
+    - name: Create workstation base image
+      azure_rm_virtualmachine:
+        resource_group: "{{ rgname }}"
+        name: ctfwrkbase
+        vm_size: Standard_D1
+        admin_username: "{{ workstationuser }}"
+        admin_password: "{{ workstationpass }}"
+        network_interface_names: "{{ workstationnic }}"
+        image:
+          offer: Windows-10
+          publisher: MicrosoftWindowsDesktop
+          sku: RS3-Pro
+          version: latest
+    - name: create workstation ELB Public IP
+      azure_rm_publicipaddress:
+        resource_group: "{{ rgname }}"
+        name: workstationpip
+        domain_name_label: "ctfwrklb"
+        
+    - name: create workstation ELB
+      azure_rm_loadbalancer:
+        resource_group: "{{ rgname }}"
+        name: "{{ workstationlb }}"
+
