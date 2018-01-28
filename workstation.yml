@@ -1,0 +1,37 @@
+---
+- name: Deploy workstation role on base
+  hosts: 
+    ctfwrklb.eastus.cloudapp.azure.com
+  tasks:
+    - name: Install Burp Suite Free
+      win_chocolatey:
+        name: burp-suite-free-edition
+
+    - name: Install Firefox
+      win_chocolatey:
+        name: firefox
+
+        #- name: Set Firefox to proxy to burp
+        #  win_shell:
+        #
+        #    cd /D "%APPDATA%\Mozilla\Firefox\Profiles"
+        #    cd *.default
+        #    set ffile=%cd%
+        #    echo user_pref("network.proxy.http", "148.233.229.235 ");>>"%ffile%\prefs.js"
+        #    echo user_pref("network.proxy.http_port", 3128);>>"%ffile%\prefs.js"
+        #    echo user_pref("network.proxy.type", 1);>>"%ffile%\prefs.js"
+        #    set ffile=
+        #    cd %windir%
+        #user_pref("network.proxy.ftp", "localhost");
+        #user_pref("network.proxy.ftp_port", 8080);
+        #user_pref("network.proxy.http", "localhost");
+        #user_pref("network.proxy.http_port", 8080);
+        #user_pref("network.proxy.share_proxy_settings", true);
+        #user_pref("network.proxy.socks", "localhost");
+        #user_pref("network.proxy.socks_port", 8080);
+        #user_pref("network.proxy.ssl", "localhost");
+        #user_pref("network.proxy.ssl_port", 8080);
+        #user_pref("network.proxy.type", 1);
+        #user_pref("network.captive-portal-service.enabled", false);
+
+        
