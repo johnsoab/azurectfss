@@ -2,23 +2,30 @@
   hosts: localhost
   vars:
     rgname: "CTFRG"
-    region: "East US"
+    region: "eastus"
     serveruser: "ctfadmin"
     ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCSqoeGdEP4O97vnC0kCXZTfDZEgILeuMQytlDVBFP8Rv2KesteSplchcN0Yp+FntwrIrvgORCNWEflFht60398hBrlxjhH45tdFe/4QgWK1y1rn4hJ32KFUZwFbpV/IF5VVmXMODmPxDQstRqScDyWS5ZXJEjXqdDnzXvzbQlPlL0AxR3sgEmTUJdNHH0LEdn9qmibouJ2kpXDDyXojmND71y1RTkCx77hXKTouHGkhotxBICFr3lHxgv/My/0zfeVZ8QTqMbi7zM7yjILVfg7vOZLQr2MeTpchN4227yMY9ZukJxw37k0fQTKKxm8woRRnbdImSex+vWj6l8O8P/ ctfadmin@desktop"
     servernsg: "ctf-server-nsg"
     serversubnet: "ctf-server-subnet"
     servernic: "ctf-server-nic"
+    serverdnslabel: "ctfsrv10101"
     workstationuser: "ctfuser"
     workstationnsg: "ctf-workstation-nsg"
     workstationsubnet: "ctf-wrk-subnet"
     workstationnic: "ctf-wrk-nic"
-    workstationlb: "ctf-wrk-lb"
+    workstationdnslabel: "ctfwrk10101"
     vnetname: "CTF-VNET1"
   vars_files:
     - secrets.yml
       # We fetch remoteallowedip and workstationpass from here
 
   tasks:
+    - name: Create ResourceGroup
+      azure_rm_resourcegroup:
+        name: "{{ rgname }}"
+        location: "{{ region }}"
+        state: present
+
     - name: Create virtualnetwork
       azure_rm_virtualnetwork:
         resource_group: "{{ rgname }}"
@@ -46,11 +53,18 @@
         name: "{{ servernsg }}"
         purge_rules: true
         rules:
-          - name: "AllowSSH_Workstation_Subnet"
+          - name: "AllowSSH_RemoteAdminIP"
             protocol: Tcp
             destination_port_range: 22
             access: Allow
             priority: 100
+            direction: Inbound
+            source_address_prefix: "{{ remoteallowedip }}"
+          - name: "AllowSSH_Workstation_Subnet"
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 105
             direction: Inbound
             source_address_prefix: "10.0.2.0/23"
           - name: "AllowHTTPS_Workstation_Subnet"
@@ -88,6 +102,7 @@
             priority: 100
             direction: Inbound
             source_address_prefix: "{{ remoteallowedip }}"
+            # This bit is only needed for Ansible setup of base images. Consider removing post-setup? Hrmm.
           - name: "AllowWinRM_Workstation_Setup"
             protocol: Tcp
             destination_port_range: 5986
@@ -96,12 +111,17 @@
             direction: Inbound
             source_address_prefix: "{{ remoteallowedip }}"
 
+    - name: create server Public IP
+      azure_rm_publicipaddress:
+        resource_group: "{{ rgname }}"
+        name: ctfserverpip
+        domain_name_label: "{{ serverdnslabel }}"
 
     - name: Create server NIC
       azure_rm_networkinterface:
         resource_group: "{{ rgname }}"
         name: "{{ servernic }}"
-        public_ip: false
+        public_ip_address_name: ctfserverpip
         virtual_network_name: "{{ vnetname }}"
         subnet_name: "{{ serversubnet }}"
         security_group_name: "{{ servernsg }}"
@@ -124,11 +144,19 @@
           sku: '7.4'
           version: latest
 
+    # We could literally iterate this for the number of workstations we need
+    # If I can work out the automation on windows.
+    - name: create workstation Public IP
+      azure_rm_publicipaddress:
+        resource_group: "{{ rgname }}"
+        name: workstationpip
+        domain_name_label: "{{ workstationdnslabel }}"
+
     - name: Create base workstation NIC
       azure_rm_networkinterface:
         resource_group: "{{ rgname }}"
         name: "{{ workstationnic }}"
-        public_ip: false
+        public_ip_address_name: workstationpip
         virtual_network_name: "{{ vnetname }}"
         subnet_name: "{{ workstationsubnet }}"
         security_group_name: "{{ workstationnsg }}"
@@ -149,15 +177,4 @@
           sku: RS3-Pro
           version: latest
 
-    - name: create workstation ELB Public IP
-      azure_rm_publicipaddress:
-        resource_group: "{{ rgname }}"
-        name: workstationpip
-        domain_name_label: "ctfwrklb"
         
-    - name: create workstation ELB
-      azure_rm_loadbalancer:
-        resource_group: "{{ rgname }}"
-        name: "{{ workstationlb }}"
-        public_ip_address_name: workstationpip
-

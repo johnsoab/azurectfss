@@ -14,4 +14,4 @@ remoteallowedip: "ip.ad.dr.ess"
 - Created playbook to customize workstation (FF/Burp/Zap/etc)
   - Still needs a task to setup proxy
 - Haven't yet created playbook to include securityshepherd-ansible role 
-  - Actually, not sure how you'd do this. Initial infra setup runs via localhost. Can you update hosts-mid-play? You wont have the new server or workstation IP until setup.
+  - Achieve by using dns-name, like workstation base image..
