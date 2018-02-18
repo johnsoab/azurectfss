@@ -9,7 +9,6 @@
     serversubnet: "ctf-server-subnet"
     servernic: "ctf-server-nic"
     workstationuser: "ctfuser"
-    # Move to vault later
     workstationnsg: "ctf-workstation-nsg"
     workstationsubnet: "ctf-wrk-subnet"
     workstationnic: "ctf-wrk-nic"
@@ -17,6 +16,7 @@
     vnetname: "CTF-VNET1"
   vars_files:
     - secrets.yml
+      # We fetch remoteallowedip and workstationpass from here
 
   tasks:
     - name: Create virtualnetwork
@@ -79,6 +79,23 @@
       azure_rm_securitygroup:
         resource_group: "{{ rgname }}"
         name: "{{ workstationnsg }}"
+        purge_rules: true
+        rules:
+          - name: "AllowRDP_Workstation_Setup"
+            protocol: Tcp
+            destination_port_range: 3389
+            access: Allow
+            priority: 100
+            direction: Inbound
+            source_address_prefix: "{{ remoteallowedip }}"
+          - name: "AllowWinRM_Workstation_Setup"
+            protocol: Tcp
+            destination_port_range: 5986
+            access: Allow
+            priority: 110
+            direction: Inbound
+            source_address_prefix: "{{ remoteallowedip }}"
+
 
     - name: Create server NIC
       azure_rm_networkinterface:

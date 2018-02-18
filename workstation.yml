@@ -11,6 +11,9 @@
       win_chocolatey:
         name: firefox
 
+    - name: Install putty
+      win_chocolatey:
+        name: putty
         #- name: Set Firefox to proxy to burp
         #  win_shell:
         #
