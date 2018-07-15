@@ -9,14 +9,8 @@
         virtual_machine_name: ctfwrkbase
         publisher: Microsoft.Compute
         virtual_machine_extension_type: CustomScriptExtension
-        type_handler_version: 1.9
+        type_handler_version: 1.8
         settings: '{"fileUris": [ "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1" ]}'
-        protected_settings: '{"commandToExecute": "powershell.exe -File ConfigureRemotingForAnsible.ps1 -EnableCredSSP"}'
+        protected_settings: '{"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ConfigureRemotingForAnsible.ps1 -EnableCredSSP"}'
         auto_upgrade_minor_version: true
-
------- I am breaking this yaml syntax on purpose -----
-For now, just do:
-    As ctfuser in Admin mode, cmd.exe:
-      powershell.exe -ExecutionPolicy Unrestricted -File ConfigureRemotingForAnsible.ps1 -EnableCredSSP
-    Do that on base image, we'll figure out ansible part later.
 
