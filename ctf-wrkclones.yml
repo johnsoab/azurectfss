@@ -37,7 +37,7 @@
     - name: Create workstation base image
       azure_rm_virtualmachine:
         resource_group: "{{ rgname }}"
-        name: ctfwrkbase
+        name: "ctfwrk{{ item }}"
         vm_size: Standard_D2_v3
         managed_disk_type: Standard_LRS
         admin_username: "{{ workstationuser }}"
