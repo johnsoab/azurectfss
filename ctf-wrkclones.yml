@@ -42,7 +42,7 @@
         managed_disk_type: Standard_LRS
         admin_username: "{{ workstationuser }}"
         admin_password: "{{ workstationpass }}"
-        network_interface_names: "{{ workstationnic }}"
+        network_interface_names: "{{ workstationnic }}{{ item }}"
         os_type: Windows
         image:
           name: ctfwrkbase-image-20180715162400
