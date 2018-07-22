@@ -147,6 +147,8 @@
           publisher: OpenLogic
           sku: '7.5'
           version: latest
+        tags:
+          'type': 'server'
 
     - name: create workstation Public IP
       azure_rm_publicipaddress:
@@ -183,6 +185,8 @@
           publisher: MicrosoftWindowsDesktop
           sku: RS3-Pro
           version: latest
+        tags:
+          'type': 'workstation'
       with_sequence: start=1 end={{ workstationcount }}
 
     - name: EnablePowerShellRemoting via Azure VM Extension
