@@ -122,10 +122,13 @@
       azure_rm_networkinterface:
         resource_group: "{{ rgname }}"
         name: "{{ servernic }}"
-        public_ip_address_name: ctfserverpip
         virtual_network_name: "{{ vnetname }}"
         subnet_name: "{{ serversubnet }}"
         security_group_name: "{{ servernsg }}"
+        ip_configurations:
+          - name: ipconfig1
+            primary: True
+            public_ip_address_name: ctfserverpip
 
     - name: Create serverVM
       azure_rm_virtualmachine:
@@ -156,10 +159,13 @@
       azure_rm_networkinterface:
         resource_group: "{{ rgname }}"
         name: "{{ workstationnic }}{{ item }}"
-        public_ip_address_name: "workstationpip{{ item }}"
         virtual_network_name: "{{ vnetname }}"
         subnet_name: "{{ workstationsubnet }}"
         security_group_name: "{{ workstationnsg }}"
+        ip_configurations:
+          - name: ipconfig1
+            primary: true
+            public_ip_address_name: "workstationpip{{ item }}"
       with_sequence: start=1 end={{ workstationcount }}
 
     - name: Create workstations
