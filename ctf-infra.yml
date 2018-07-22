@@ -8,12 +8,13 @@
     servernsg: "ctf-server-nsg"
     serversubnet: "ctf-server-subnet"
     servernic: "ctf-server-nic"
-    serverdnslabel: "ctfsrv10101"
+    serverdnslabel: "ctfsrv"
     workstationuser: "ctfuser"
     workstationnsg: "ctf-workstation-nsg"
     workstationsubnet: "ctf-wrk-subnet"
     workstationnic: "ctf-wrk-nic"
-    workstationdnslabel: "ctfwrk10101"
+    workstationdnslabel: "ctfwrk"
+    workstationcount: 2
     vnetname: "CTF-VNET1"
   vars_files:
     - secrets.yml
@@ -141,40 +142,53 @@
         image:
           offer: CentOS
           publisher: OpenLogic
-          sku: '7.4'
+          sku: '7.5'
           version: latest
 
-    # We could literally iterate this for the number of workstations we need
-    # If I can work out the automation on windows.
     - name: create workstation Public IP
       azure_rm_publicipaddress:
         resource_group: "{{ rgname }}"
-        name: workstationpip
-        domain_name_label: "{{ workstationdnslabel }}"
+        name: "workstationpip{{ item }}"
+        domain_name_label: "{{ workstationdnslabel }}{{ item }}"
+      with_sequence: start=1 end={{ workstationcount }}
 
-    - name: Create base workstation NIC
-      azure_rm_networkinterface:
-        resource_group: "{{ rgname }}"
-        name: "{{ workstationnic }}"
-        public_ip_address_name: workstationpip
-        virtual_network_name: "{{ vnetname }}"
-        subnet_name: "{{ workstationsubnet }}"
-        security_group_name: "{{ workstationnsg }}"
+     - name: Create base workstation NIC
+       azure_rm_networkinterface:
+         resource_group: "{{ rgname }}"
+         name: "{{ workstationnic }}{{ item }}"
+         public_ip_address_name: "workstationpip{{ item }}"
+         virtual_network_name: "{{ vnetname }}"
+         subnet_name: "{{ workstationsubnet }}"
+         security_group_name: "{{ workstationnsg }}"
+       with_sequence: start=1 end={{ workstationcount }}
 
-    - name: Create workstation base image
+    - name: Create workstations
       azure_rm_virtualmachine:
         resource_group: "{{ rgname }}"
-        name: ctfwrkbase
+        name: "{{ workstationdnslabel }}{{ item }}"
         vm_size: Standard_D2_v3
         managed_disk_type: Standard_LRS
         admin_username: "{{ workstationuser }}"
         admin_password: "{{ workstationpass }}"
-        network_interface_names: "{{ workstationnic }}"
+        network_interface_names: "{{ workstationnic }}{{ item }}"
         os_type: Windows
         image:
           offer: Windows-10
           publisher: MicrosoftWindowsDesktop
           sku: RS3-Pro
           version: latest
+      with_sequence: start=1 end={{ workstationcount }}
 
-        
+    - name: EnablePowerShellRemoting via Azure VM Extension
+      azure_rm_virtualmachine_extension:
+        name: EnableAnsibleWinRM3
+        resource_group: "{{ rgname }}"
+        virtual_machine_name: "{{ workstationdnslabel }}{{ item }}"
+        publisher: Microsoft.Compute
+        virtual_machine_extension_type: CustomScriptExtension
+        type_handler_version: 1.8
+        settings: '{"fileUris": [ "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1" ]}'
+        protected_settings: '{"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ConfigureRemotingForAnsible.ps1 -EnableCredSSP"}'
+        auto_upgrade_minor_version: true
+      with_sequence: start=1 end={{ workstationcount }}
+
