@@ -1,0 +1,29 @@
+### This seems not to work, maybe bug in azure_rm_containerinstance?
+- name: Azure CTF JuiceShop playbook
+  hosts: localhost
+  vars:
+    rgname: "CTFRG"
+    region: "eastus"
+
+  tasks:
+    - name: Create ResourceGroup
+      azure_rm_resourcegroup:
+        name: "{{ rgname }}"
+        location: "{{ region }}"
+        state: present
+
+    - name: Provision JuiceShop Container Instance
+      azure_rm_containerinstance:
+        resource_group: "{{ rgname }}"
+        name: juiceshop-nlsn
+        os_type: linux
+        ip_address: public
+        ports:
+          - 3000
+        containers:
+          - name: juiceshop-nlsn-aci
+          image: bkimminich/juice-shop
+            memory: 1.5
+            ports:
+              - 3000
+

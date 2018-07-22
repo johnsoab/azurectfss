@@ -1,0 +1,1 @@
+ctfwrk1.eastus.cloudapp.azure.com ansible_user=ctfuser ansible_password="plugyourpasswordhere?" ansible_port=5986 ansible_connection=winrm ansible_winrm_server_cert_validation=ignore
