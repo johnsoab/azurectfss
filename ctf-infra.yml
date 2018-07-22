@@ -152,15 +152,15 @@
         domain_name_label: "{{ workstationdnslabel }}{{ item }}"
       with_sequence: start=1 end={{ workstationcount }}
 
-     - name: Create base workstation NIC
-       azure_rm_networkinterface:
-         resource_group: "{{ rgname }}"
-         name: "{{ workstationnic }}{{ item }}"
-         public_ip_address_name: "workstationpip{{ item }}"
-         virtual_network_name: "{{ vnetname }}"
-         subnet_name: "{{ workstationsubnet }}"
-         security_group_name: "{{ workstationnsg }}"
-       with_sequence: start=1 end={{ workstationcount }}
+    - name: Create base workstation NIC
+      azure_rm_networkinterface:
+        resource_group: "{{ rgname }}"
+        name: "{{ workstationnic }}{{ item }}"
+        public_ip_address_name: "workstationpip{{ item }}"
+        virtual_network_name: "{{ vnetname }}"
+        subnet_name: "{{ workstationsubnet }}"
+        security_group_name: "{{ workstationnsg }}"
+      with_sequence: start=1 end={{ workstationcount }}
 
     - name: Create workstations
       azure_rm_virtualmachine:
