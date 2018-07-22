@@ -149,6 +149,8 @@
           version: latest
         tags:
           'type': 'server'
+      async: 1000
+      poll: 0
 
     - name: create workstation Public IP
       azure_rm_publicipaddress:
@@ -187,6 +189,8 @@
           version: latest
         tags:
           'type': 'workstation'
+      async: 1000
+      poll: 0
       with_sequence: start=1 end={{ workstationcount }}
 
     - name: EnablePowerShellRemoting via Azure VM Extension
@@ -200,5 +204,7 @@
         settings: '{"fileUris": [ "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1" ]}'
         protected_settings: '{"commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ConfigureRemotingForAnsible.ps1 -EnableCredSSP"}'
         auto_upgrade_minor_version: true
+      async: 600
+      poll: 0
       with_sequence: start=1 end={{ workstationcount }}
 
